@@ -1,0 +1,56 @@
+{
+  "title": "Product",
+  "description": "Good product",
+  "blueprint_id": 6,
+  "print_provider_id": 29,
+  "variants": [
+        {
+            "id": 12100,
+            "price": 400,
+            "is_enabled": true
+        },
+        {
+            "id": 12101,
+            "price": 400,
+            "is_enabled": true
+        },
+        {
+            "id": 12102,
+            "price": 400,
+            "is_enabled": false
+        },
+        {
+            "id": 12103,
+            "price": 400,
+            "is_enabled": false
+        },
+        {
+          "id": 12104,
+          "price": 400,
+          "is_enabled": false
+      }
+    ],
+    "print_areas": [
+      {
+        "variant_ids": [12100,12101,12102,12103,12104],
+        "placeholders": [
+          {
+            "position": "front",
+            "images": [
+              {
+                "id": "65989d88673461283ab829c8",
+                "name": "FPAI1002-A3.png",
+                "type": "image/png",
+                "height": 4950,
+                "width": 3510,
+                "x": 0.7746273761374225,
+                "y": 0.30324622644608457,
+                "scale": 0.9454545454545453,
+                "angle": 0
+              }
+            ]
+          }
+        ]
+      }
+    ]
+}
