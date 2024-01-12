@@ -199,9 +199,7 @@ async function executeMainLogic() {
 
             let print_provider_title = listing.listing_title;
             if (printProvider.country !== 'US') {
-                print_provider_title += ' ' + printProvider.country + ' (Test Fri)'; // Title was previously trim()ed
-            } else {
-                print_provider_title += ' (Test Fri)'; //Remove this and the For Checking above after testing
+                print_provider_title += ' ' + printProvider.country; // Title was previously trim()ed
             }
 
             // Create a new array of only the placeholders that have images, empty placeholders will cause an 400 error
@@ -256,15 +254,15 @@ async function executeMainLogic() {
 
     // Now PUT request to update the CANADA listing in each eligibleListings item
     // This is done after the new country listings have been created in case there was an error
-    // for (const listing of eligibleListings) {
-    //     try {
-    //         let success = await updateCanadaSkus(listing);
-    //         console.log(`Canada API SKU update for listing ${listing.listing_title} was ${success ? 'successful' : 'unsuccessful'}`);
-    //     } catch (error) {
-    //         console.error(error);
-    //         console.error(`Error in catch block when updating API Canada SKUs for ${listing.listing_title}`);
-    //     }
-    // }
+    for (const listing of eligibleListings) {
+        try {
+            let success = await updateCanadaSkus(listing);
+            console.log(`Canada API SKU update for listing ${listing.listing_title} was ${success ? 'successful' : 'unsuccessful'}`);
+        } catch (error) {
+            console.error(error);
+            console.error(`Error in catch block when updating API Canada SKUs for ${listing.listing_title}`);
+        }
+    }
 
     console.log('Completed main process');
     //res.send(`<pre>${JSON.stringify(responseAllProducts.data, null, 2)}</pre>`);
