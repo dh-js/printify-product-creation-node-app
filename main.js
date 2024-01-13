@@ -13,7 +13,7 @@ async function executeMainLogic() {
     // res.send(`<pre>${JSON.stringify(allProductsData, null, 2)}</pre>`);
     // return;
 
-    console.log('All listings fetched from Printify');
+    //console.log('All listings fetched from Printify');
 
     let eligibleListings = [];
     // Loop through all listings and find the ones that have only the 'small SKU' set up, push them to eligibleListings
@@ -81,7 +81,7 @@ async function executeMainLogic() {
     }
 
     if (eligibleListings.length === 0) {
-        console.log('No eligible listings found');
+        //console.log('No eligible listings found');
         return;
     }
 
@@ -102,7 +102,7 @@ async function executeMainLogic() {
                     let smallSKU = listing.listing_variants[color]['S'].sku.replace(/ /g, '');
                     let baseSKU;
                     if (smallSKU.toUpperCase().endsWith('-S-CAN')) {
-                        baseSKU = smallSKU.slice(0, -6).toUpperCase();
+                        baseSKU = smallSKU.slice(0, -6);
                         // Loop through each size and set the SKU to the baseSKU + the size 
                         //(Also reset the small SKU value in case it contained spaces)
                         for (const size in listing.listing_variants[color]) {
