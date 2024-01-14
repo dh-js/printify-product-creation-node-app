@@ -1,5 +1,5 @@
 // exec used for automatically opening browser window during local development
-//const { exec } = require('child_process');
+// const { exec } = require('child_process');
 const cron = require('node-cron');
 const express = require('express');
 const app = express();
@@ -40,7 +40,15 @@ cron.schedule('*/5 * * * *', async function() {
 });
 
 // Hit the below endpoint to run the main logic during local dev
-//app.get('/productCreationProcess', executeMainLogic);
+// app.get('/productCreationProcess', async (req, res) => {
+//     try {
+//         const allProductsData = await executeMainLogic();
+//         res.send(`<pre>${JSON.stringify(allProductsData, null, 2)}</pre>`);
+//     } catch (error) {
+//         console.error('Error executing main logic:', error);
+//         res.status(500).send('An error occurred while executing main logic');
+//     }
+// });
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
