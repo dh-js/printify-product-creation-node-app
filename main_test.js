@@ -1,17 +1,100 @@
 const { fetchAllListings, updateCanadaSkus, createNewCountryListing } = require('./helper_functions');
 
-async function executeMainLogic() {
+async function executeMainLogicTest() {
 
-    // First, fetch the first 2 pages (200) listings from Printify store and store them in allProductsData array
     let allProductsData = [];
     for (let i = 1; i <= 6; i++) {
         const products = await fetchAllListings(i);
         allProductsData.push(...products);
     }
 
-    // console.log(allProductsData.length);
-    // res.send(`<pre>${JSON.stringify(allProductsData, null, 2)}</pre>`);
-    // return;
+    let printAreas = {};
+    for (const listing of allProductsData) {
+        // Convert the listing's created_at date to a Date object
+        let listingDate = new Date(listing.created_at);
+        // Create a Date object for 1st Jan 2024
+        let cutOffDate = new Date('2024-01-01T00:00:00Z');
+        // Skip this listing if it was created on or after 1st Jan 2024
+        if (listingDate >= cutOffDate) {
+            continue;
+        }
+
+        //Only get Tees
+        if (listing.blueprint_id !== 6) {
+            continue;
+        }
+
+        let newObject = {
+            listing_id: listing.id,
+            listing_title: listing.title,
+            listing_blueprint_id: listing.blueprint_id,
+            listing_print_provider_id: listing.print_provider_id,
+        }
+        let newPlaceholders = [];
+            for (const placeholder of listing.print_areas[0].placeholders) {
+                if (placeholder.images.length > 0 && placeholder.position !== "neck") {
+                    newPlaceholders.push(placeholder);
+                }
+            }
+        newObject.listing_print_areas = newPlaceholders;
+
+        // Trim the title and remove the country code if it exists
+        let trimmedTitle = listing.title.trim();
+        let countryCodeMatch = trimmedTitle.match(/(CAN|UK|EU|AUS)$/);
+        let titleWithoutCountryCode = trimmedTitle.replace(/(CAN|UK|EU|AUS)$/, '').trim();
+
+        // Add the country code to the newObject, default to 'US' if no match found
+        newObject.country_code = countryCodeMatch ? countryCodeMatch[0] : 'US';
+
+        // If the title doesn't exist in the printAreas object, add it
+        if (!printAreas[titleWithoutCountryCode]) {
+            printAreas[titleWithoutCountryCode] = [];
+        }
+
+        // Push the new object to the corresponding array in the printAreas object
+        printAreas[titleWithoutCountryCode].push(newObject);
+    }
+
+    function calculateScaleRatios(printAreas) {
+        let scaleRatios = {};
+    
+        for (const key in printAreas) {
+            let canScale, usScale;
+    
+            for (const item of printAreas[key]) {
+                if (item.country_code === 'CAN') {
+                    canScale = item.listing_print_areas[0].images[0].scale;
+                } else if (item.country_code === 'AUS') {
+                    usScale = item.listing_print_areas[0].images[0].scale;
+                }
+            }
+    
+            if (canScale && usScale) {
+                scaleRatios[key] = usScale / canScale;
+            }
+        }
+    
+        return scaleRatios;
+    }
+
+    let scaleRatios = calculateScaleRatios(printAreas);
+
+    function calculateAverageScaleRatio(scaleRatios) {
+        let sum = 0;
+        let count = 0;
+    
+        for (const key in scaleRatios) {
+            sum += scaleRatios[key];
+            count++;
+        }
+    
+        return sum / count;
+    }
+    
+    let averageScaleRatio = calculateAverageScaleRatio(scaleRatios);
+    console.log(averageScaleRatio);
+
+    return scaleRatios;
 
     //console.log('All listings fetched from Printify');
 
@@ -211,41 +294,6 @@ async function executeMainLogic() {
                 }
             }
 
-            // Setting the scale value for each country
-            if (printProvider.country === 'US') {
-                for (const placeholder of newPlaceholders) {
-                    if (placeholder.images.length > 0) {
-                        let oldScale = placeholder.images[0].scale;
-                        placeholder.images[0].scale *= 0.8000497701392607;
-                        console.log(`US: Scale changed from ${oldScale} to ${placeholder.images[0].scale}`);
-                    }
-                }
-            } else if (printProvider.country === 'UK') {
-                for (const placeholder of newPlaceholders) {
-                    if (placeholder.images.length > 0) {
-                        let oldScale = placeholder.images[0].scale;
-                        placeholder.images[0].scale *= 0.8000708149781925;
-                        console.log(`UK: Scale changed from ${oldScale} to ${placeholder.images[0].scale}`);
-                    }
-                }
-            } else if (printProvider.country === 'EU') {
-                for (const placeholder of newPlaceholders) {
-                    if (placeholder.images.length > 0) {
-                        let oldScale = placeholder.images[0].scale;
-                        placeholder.images[0].scale *= 0.7816706309981084;
-                        console.log(`EU: Scale changed from ${oldScale} to ${placeholder.images[0].scale}`);
-                    }
-                }
-            } else if (printProvider.country === 'EU') {
-                for (const placeholder of newPlaceholders) {
-                    if (placeholder.images.length > 0) {
-                        let oldScale = placeholder.images[0].scale;
-                        placeholder.images[0].scale *= 0.8533199437600327;
-                        console.log(`EU: Scale changed from ${oldScale} to ${placeholder.images[0].scale}`);
-                    }
-                }
-            }
-
             // Setting the UK print provider ID depending on whether the listing is a tee or sweater/hoodie
             let printProviderID;
             if (printProvider.country === 'UK') {
@@ -303,4 +351,4 @@ async function executeMainLogic() {
     //res.send(`<pre>${JSON.stringify(responseAllProducts.data, null, 2)}</pre>`);
 }
 
-module.exports = executeMainLogic;
+module.exports = executeMainLogicTest;
