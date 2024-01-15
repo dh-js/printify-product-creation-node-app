@@ -207,7 +207,9 @@ async function executeMainLogic() {
             let newPlaceholders = [];
             for (const placeholder of listing.listing_print_areas[0].placeholders) {
                 if (placeholder.images.length > 0) {
-                    newPlaceholders.push(placeholder);
+                    // Create a deep copy of the placeholder
+                    let newPlaceholder = JSON.parse(JSON.stringify(placeholder));
+                    newPlaceholders.push(newPlaceholder);
                 }
             }
 
@@ -216,7 +218,7 @@ async function executeMainLogic() {
                 for (const placeholder of newPlaceholders) {
                     if (placeholder.images.length > 0) {
                         let oldScale = placeholder.images[0].scale;
-                        placeholder.images[0].scale *= 0.8000497701392607;
+                        placeholder.images[0].scale *= 0.798;
                         console.log(`US: Scale changed from ${oldScale} to ${placeholder.images[0].scale}`);
                     }
                 }
