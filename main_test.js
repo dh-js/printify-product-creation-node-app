@@ -39,7 +39,8 @@ async function executeMainLogicTest() {
         newObject.listing_print_areas = newPlaceholders;
 
         // Trim the title and remove the country code if it exists
-        let trimmedTitle = listing.title.trim();
+        let originalTitle = listing.title.trim();
+        let trimmedTitle = originalTitle.replace('AUS NZ', 'AUS');
         let countryCodeMatch = trimmedTitle.match(/(CAN|UK|EU|AUS)$/);
         let titleWithoutCountryCode = trimmedTitle.replace(/(CAN|UK|EU|AUS)$/, '').trim();
 
@@ -55,29 +56,31 @@ async function executeMainLogicTest() {
         printAreas[titleWithoutCountryCode].push(newObject);
     }
 
-    function calculateScaleRatios(printAreas) {
+    //return printAreas;
+
+    function calculateScaleRatios(printAreas, valueToTest, comparisonCountryCode) {
         let scaleRatios = {};
     
         for (const key in printAreas) {
-            let canScale, usScale;
+            let canScale, comparisonScale;
     
             for (const item of printAreas[key]) {
                 if (item.country_code === 'CAN') {
-                    canScale = item.listing_print_areas[0].images[0].scale;
-                } else if (item.country_code === 'AUS') {
-                    usScale = item.listing_print_areas[0].images[0].scale;
+                    canScale = item.listing_print_areas[0].images[0][valueToTest];
+                } else if (item.country_code === comparisonCountryCode) {
+                    comparisonScale = item.listing_print_areas[0].images[0][valueToTest];
                 }
             }
     
-            if (canScale && usScale) {
-                scaleRatios[key] = usScale / canScale;
+            if (canScale && comparisonScale) {
+                scaleRatios[key] = comparisonScale / canScale;
             }
         }
     
         return scaleRatios;
     }
-
-    let scaleRatios = calculateScaleRatios(printAreas);
+    
+    let scaleRatios = calculateScaleRatios(printAreas, 'x', 'AUS');
 
     function calculateAverageScaleRatio(scaleRatios) {
         let sum = 0;

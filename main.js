@@ -213,37 +213,53 @@ async function executeMainLogic() {
                 }
             }
 
-            // Setting the scale value for each country
+            // Setting the scale/y/x values for each country
             if (printProvider.country === 'US') {
                 for (const placeholder of newPlaceholders) {
                     if (placeholder.images.length > 0) {
-                        let oldScale = placeholder.images[0].scale;
+                        let oldValueY = placeholder.images[0].y;
+                        //let oldValueX = placeholder.images[0].x;
                         placeholder.images[0].scale *= 0.798;
-                        console.log(`US: Scale changed from ${oldScale} to ${placeholder.images[0].scale}`);
+                        placeholder.images[0].y *= 0.940;
+                        //placeholder.images[0].x *= 0.999;
+                        console.log(`US: Y Scale changed from ${oldValueY} to ${placeholder.images[0].y}`);
+                        //console.log(`US: X Scale changed from ${oldValueX} to ${placeholder.images[0].x}`);
                     }
                 }
             } else if (printProvider.country === 'UK') {
                 for (const placeholder of newPlaceholders) {
                     if (placeholder.images.length > 0) {
-                        let oldScale = placeholder.images[0].scale;
-                        placeholder.images[0].scale *= 0.8000708149781925;
-                        console.log(`UK: Scale changed from ${oldScale} to ${placeholder.images[0].scale}`);
+                        let oldValueY = placeholder.images[0].y;
+                        //let oldValueX = placeholder.images[0].x;
+                        placeholder.images[0].scale *= 0.8;
+                        placeholder.images[0].y *= 1.045;
+                        //placeholder.images[0].x *= 0.999
+                        console.log(`UK: Y Scale changed from ${oldValueY} to ${placeholder.images[0].y}`);
+                        //console.log(`UK: X Scale changed from ${oldValueX} to ${placeholder.images[0].x}`);
                     }
                 }
             } else if (printProvider.country === 'EU') {
                 for (const placeholder of newPlaceholders) {
                     if (placeholder.images.length > 0) {
-                        let oldScale = placeholder.images[0].scale;
-                        placeholder.images[0].scale *= 0.7816706309981084;
-                        console.log(`EU: Scale changed from ${oldScale} to ${placeholder.images[0].scale}`);
+                        let oldValueY = placeholder.images[0].y;
+                        //let oldValueX = placeholder.images[0].x;
+                        placeholder.images[0].scale *= 0.781;
+                        placeholder.images[0].y *= 1.034;
+                        //placeholder.images[0].x *= 0.999
+                        console.log(`EU: Y Scale changed from ${oldValueY} to ${placeholder.images[0].y}`);
+                        //console.log(`EU: X Scale changed from ${oldValueX} to ${placeholder.images[0].x}`);
                     }
                 }
-            } else if (printProvider.country === 'EU') {
+            } else if (printProvider.country === 'AUS') {
                 for (const placeholder of newPlaceholders) {
                     if (placeholder.images.length > 0) {
-                        let oldScale = placeholder.images[0].scale;
-                        placeholder.images[0].scale *= 0.8533199437600327;
-                        console.log(`EU: Scale changed from ${oldScale} to ${placeholder.images[0].scale}`);
+                        let oldValueY = placeholder.images[0].y;
+                        //let oldValueX = placeholder.images[0].x;
+                        placeholder.images[0].scale *= 0.853;
+                        placeholder.images[0].y *= 0.996;
+                        //placeholder.images[0].x *= 0.999
+                        console.log(`AUS: Y Scale changed from ${oldValueY} to ${placeholder.images[0].y}`);
+                        //console.log(`AUS: X Scale changed from ${oldValueX} to ${placeholder.images[0].x}`);
                     }
                 }
             }
