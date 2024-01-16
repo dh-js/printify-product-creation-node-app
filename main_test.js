@@ -80,7 +80,7 @@ async function executeMainLogicTest() {
         return scaleRatios;
     }
     
-    let scaleRatios = calculateScaleRatios(printAreas, 'x', 'AUS');
+    let scaleRatios = calculateScaleRatios(printAreas, 'y', 'US');
 
     function calculateAverageScaleRatio(scaleRatios) {
         let sum = 0;

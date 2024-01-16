@@ -1,5 +1,5 @@
 // exec used for automatically opening browser window during local development
-const { exec } = require('child_process');
+//const { exec } = require('child_process');
 const cron = require('node-cron');
 const express = require('express');
 const app = express();
@@ -15,7 +15,7 @@ console.log('Running in:', process.env.NODE_ENV || 'no environment specified');
 
 // IMPORT MAIN PROCESS
 const executeMainLogic = require('./main');
-const executeMainLogicTest = require('./main_test');
+//const executeMainLogicTest = require('./main_test');
 
 app.get('/', (req, res) => {
     res.send('App is Running!');
@@ -41,27 +41,27 @@ cron.schedule('*/5 * * * *', async function() {
 });
 
 // Hit the below endpoint to run the main logic during local dev
-app.get('/productCreationProcess', async (req, res) => {
-    try {
-        const allProductsData = await executeMainLogicTest();
-        res.send(`<pre>${JSON.stringify(allProductsData, null, 2)}</pre>`);
-    } catch (error) {
-        console.error('Error executing main_test logic:', error);
-        res.status(500).send('An error occurred while executing main logic');
-    }
-});
-
-// app.listen(PORT, () => {
-//     console.log(`Server is running on port ${PORT}`);
+// app.get('/productCreationProcess', async (req, res) => {
+//     try {
+//         const allProductsData = await executeMainLogicTest();
+//         res.send(`<pre>${JSON.stringify(allProductsData, null, 2)}</pre>`);
+//     } catch (error) {
+//         console.error('Error executing main_test logic:', error);
+//         res.status(500).send('An error occurred while executing main logic');
+//     }
 // });
 
-// Use below block to automatically open browser window during local development
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-    exec(`start http://localhost:${PORT}/productCreationProcess`, (err, stdout, stderr) => {
-        if (err) {
-            console.error(`exec error: ${err}`);
-            return;
-        }
-    });
 });
+
+// Use below block to automatically open browser window during local development
+// app.listen(PORT, () => {
+//     console.log(`Server is running on port ${PORT}`);
+//     exec(`start http://localhost:${PORT}/productCreationProcess`, (err, stdout, stderr) => {
+//         if (err) {
+//             console.error(`exec error: ${err}`);
+//             return;
+//         }
+//     });
+// });
