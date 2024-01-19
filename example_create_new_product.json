@@ -2,7 +2,7 @@
   "title": "Product",
   "description": "Good product",
   "blueprint_id": 6,
-  "print_provider_id": 29,
+  "print_provider_id": 6,
   "variants": [
         {
             "id": 12100,

@@ -1,103 +1,19 @@
 const { fetchAllListings, updateCanadaSkus, createNewCountryListing } = require('./helper_functions');
 
-async function executeMainLogicTest() {
+async function executeMainTestLogic() {
 
+    //REMOVED THE SKU INVOLVEMENT SO THAT I CAN TEST THE CODE ON MY TEST STORE
+
+    // First, fetch the first 2 pages (200) listings from Printify store and store them in allProductsData array
     let allProductsData = [];
     for (let i = 1; i <= 6; i++) {
         const products = await fetchAllListings(i);
         allProductsData.push(...products);
     }
 
-    let printAreas = {};
-    for (const listing of allProductsData) {
-        // Convert the listing's created_at date to a Date object
-        let listingDate = new Date(listing.created_at);
-        // Create a Date object for 1st Jan 2024
-        let cutOffDate = new Date('2024-01-01T00:00:00Z');
-        // Skip this listing if it was created on or after 1st Jan 2024
-        if (listingDate >= cutOffDate) {
-            continue;
-        }
-
-        //Only get Tees
-        if (listing.blueprint_id !== 6) {
-            continue;
-        }
-
-        let newObject = {
-            listing_id: listing.id,
-            listing_title: listing.title,
-            listing_blueprint_id: listing.blueprint_id,
-            listing_print_provider_id: listing.print_provider_id,
-        }
-        let newPlaceholders = [];
-            for (const placeholder of listing.print_areas[0].placeholders) {
-                if (placeholder.images.length > 0 && placeholder.position !== "neck") {
-                    newPlaceholders.push(placeholder);
-                }
-            }
-        newObject.listing_print_areas = newPlaceholders;
-
-        // Trim the title and remove the country code if it exists
-        let originalTitle = listing.title.trim();
-        let trimmedTitle = originalTitle.replace('AUS NZ', 'AUS');
-        let countryCodeMatch = trimmedTitle.match(/(CAN|UK|EU|AUS)$/);
-        let titleWithoutCountryCode = trimmedTitle.replace(/(CAN|UK|EU|AUS)$/, '').trim();
-
-        // Add the country code to the newObject, default to 'US' if no match found
-        newObject.country_code = countryCodeMatch ? countryCodeMatch[0] : 'US';
-
-        // If the title doesn't exist in the printAreas object, add it
-        if (!printAreas[titleWithoutCountryCode]) {
-            printAreas[titleWithoutCountryCode] = [];
-        }
-
-        // Push the new object to the corresponding array in the printAreas object
-        printAreas[titleWithoutCountryCode].push(newObject);
-    }
-
-    //return printAreas;
-
-    function calculateScaleRatios(printAreas, valueToTest, comparisonCountryCode) {
-        let scaleRatios = {};
-    
-        for (const key in printAreas) {
-            let canScale, comparisonScale;
-    
-            for (const item of printAreas[key]) {
-                if (item.country_code === 'CAN') {
-                    canScale = item.listing_print_areas[0].images[0][valueToTest];
-                } else if (item.country_code === comparisonCountryCode) {
-                    comparisonScale = item.listing_print_areas[0].images[0][valueToTest];
-                }
-            }
-    
-            if (canScale && comparisonScale) {
-                scaleRatios[key] = comparisonScale / canScale;
-            }
-        }
-    
-        return scaleRatios;
-    }
-    
-    let scaleRatios = calculateScaleRatios(printAreas, 'y', 'US');
-
-    function calculateAverageScaleRatio(scaleRatios) {
-        let sum = 0;
-        let count = 0;
-    
-        for (const key in scaleRatios) {
-            sum += scaleRatios[key];
-            count++;
-        }
-    
-        return sum / count;
-    }
-    
-    let averageScaleRatio = calculateAverageScaleRatio(scaleRatios);
-    console.log(averageScaleRatio);
-
-    return scaleRatios;
+    // console.log(allProductsData.length);
+    // res.send(`<pre>${JSON.stringify(allProductsData, null, 2)}</pre>`);
+    // return;
 
     //console.log('All listings fetched from Printify');
 
@@ -105,13 +21,10 @@ async function executeMainLogicTest() {
     // Loop through all listings and find the ones that have only the 'small SKU' set up, push them to eligibleListings
     for (const listing of allProductsData) {
         try{
-            // Only push listings that are either a tee, sweater or hoodie (id values)
-            if (![49, 6, 77].includes(listing.blueprint_id)) {
+            // Only push listings that have 'testnow' in the title
+            if (!listing.title.toLowerCase().includes('testnow')) {
                 continue;
             }
-
-            let hasOnlyOneSKUPerSize = true;
-            let hasAtLeastOneSKU = false;
 
             if (listing.variants) {
                 let myVersionOfTheListing = {
@@ -140,26 +53,8 @@ async function executeMainLogicTest() {
                     myVersionOfTheListing.listing_variants[color][size] = variant;
                 }
 
-                // Now check if the listing only has small SKUs
-                for (const color in myVersionOfTheListing.listing_variants) {
-                    let counter = 0;
-                    for (const size in myVersionOfTheListing.listing_variants[color]) {
-                        let sku = myVersionOfTheListing.listing_variants[color][size].sku.trim();
-                        if (sku.toUpperCase().endsWith('-CAN')) {
-                            counter++
-                        }
-                    }
-                    if (counter > 1) {
-                        hasOnlyOneSKUPerSize = false;
-                    }
-                    if (counter > 0) {
-                        hasAtLeastOneSKU = true;
-                    }
-                }
-
-                if (hasOnlyOneSKUPerSize && hasAtLeastOneSKU && listing.print_provider_id === 27) {
-                    eligibleListings.push(myVersionOfTheListing);
-                }
+            eligibleListings.push(myVersionOfTheListing);
+            
             }
         } catch (error) {
             console.error(`Error processing listing '${listing.title}': ${error.message}`);
@@ -173,43 +68,9 @@ async function executeMainLogicTest() {
 
     console.log(`Found ${eligibleListings.length} eligible listings`)
 
-    // res.send(`<pre>${JSON.stringify(eligibleListings, null, 2)}</pre>`);
-    // return;
 
-    //So eligibleListings will now contain any 'STARTER (CANADA SMALL SKU)' listings
-    //Now we need to loop through each listing to update the SKUs
-    for (const listing of eligibleListings) {
-        try {
-            // For each color of the listing
-            for (const color in listing.listing_variants) {
-                // If this color has a custom small SKU
-                if (isNaN(listing.listing_variants[color]['S'].sku)) {
-                    // Clean the starter SKU by removing all spaces
-                    let smallSKU = listing.listing_variants[color]['S'].sku.replace(/ /g, '');
-                    let baseSKU;
-                    if (smallSKU.toUpperCase().endsWith('-S-CAN')) {
-                        baseSKU = smallSKU.slice(0, -6);
-                        // Loop through each size and set the SKU to the baseSKU + the size 
-                        //(Also reset the small SKU value in case it contained spaces)
-                        for (const size in listing.listing_variants[color]) {
-                            if (size !== '5XL') {
-                                listing.listing_variants[color][size].sku = baseSKU + '-' + size + '-CAN';
-                            }
-                        }
-                    } else {
-                        throw new Error('smallSKU does not end with -S-CAN');
-                    }
-                }
-            }
-        } catch (error) {
-            console.error(`Error updating listing object for '${listing.listing_title}': ${error.message}`);
-        }
-    }
+    //return eligibleListings;
 
-    console.log('All eligible listings objects have been updated with the correct Canada SKUs');
-
-    // res.send(`<pre>${JSON.stringify(eligibleListings, null, 2)}</pre>`);
-    // return;
 
     // First, create the other country listings
     // Note the available_variant_ids should be taken from the print area variant ids of an existing listing on Printify
@@ -264,18 +125,11 @@ async function executeMainLogicTest() {
                     let variantId = listing.listing_variants[color][size].id;
                     if (printProvider[listing.listing_blueprint_id].includes(variantId)) {
 
-                        let newSKU;
-                        if (listing.listing_variants[color][size].sku.endsWith('CAN')) {
-                            newSKU = listing.listing_variants[color][size].sku.slice(0, -3) + printProvider.country;
-                        }
                         let variant = {
                             "id": variantId,
                             "price": listing.listing_variants[color][size].price,
                             "is_enabled": listing.listing_variants[color][size].is_enabled
                         };
-                        if (newSKU) {
-                            variant.sku = newSKU;
-                        }
                         variantsArray.push(variant);
                         allVariantIDs.push(variantId);
                     }
@@ -293,9 +147,239 @@ async function executeMainLogicTest() {
             let newPlaceholders = [];
             for (const placeholder of listing.listing_print_areas[0].placeholders) {
                 if (placeholder.images.length > 0) {
-                    newPlaceholders.push(placeholder);
+                    // Create a deep copy of the placeholder
+                    let newPlaceholder = JSON.parse(JSON.stringify(placeholder));
+                    newPlaceholders.push(newPlaceholder);
                 }
             }
+
+            // Setting the scale/y/x values for each country
+            // if (printProvider.country === 'US') {
+            //     for (const placeholder of newPlaceholders) {
+            //         if (placeholder.images.length > 0) {
+            //             let oldValueY = placeholder.images[0].y;
+            //             //let oldValueX = placeholder.images[0].x;
+            //             placeholder.images[0].scale *= 0.798;
+            //             placeholder.images[0].y *= 0.940;
+            //             //placeholder.images[0].x *= 0.999;
+            //             console.log(`US: Y Scale changed from ${oldValueY} to ${placeholder.images[0].y}`);
+            //             //console.log(`US: X Scale changed from ${oldValueX} to ${placeholder.images[0].x}`);
+            //         }
+            //     }
+            // } else if (printProvider.country === 'UK') {
+            //     for (const placeholder of newPlaceholders) {
+            //         if (placeholder.images.length > 0) {
+            //             let oldValueY = placeholder.images[0].y;
+            //             //let oldValueX = placeholder.images[0].x;
+            //             placeholder.images[0].scale *= 0.8;
+            //             placeholder.images[0].y *= 1.045;
+            //             //placeholder.images[0].x *= 0.999
+            //             console.log(`UK: Y Scale changed from ${oldValueY} to ${placeholder.images[0].y}`);
+            //             //console.log(`UK: X Scale changed from ${oldValueX} to ${placeholder.images[0].x}`);
+            //         }
+            //     }
+            // } else if (printProvider.country === 'EU') {
+            //     for (const placeholder of newPlaceholders) {
+            //         if (placeholder.images.length > 0) {
+            //             let oldValueY = placeholder.images[0].y;
+            //             //let oldValueX = placeholder.images[0].x;
+            //             placeholder.images[0].scale *= 0.781;
+            //             placeholder.images[0].y *= 1.034;
+            //             //placeholder.images[0].x *= 0.999
+            //             console.log(`EU: Y Scale changed from ${oldValueY} to ${placeholder.images[0].y}`);
+            //             //console.log(`EU: X Scale changed from ${oldValueX} to ${placeholder.images[0].x}`);
+            //         }
+            //     }
+            // } else if (printProvider.country === 'AUS') {
+            //     for (const placeholder of newPlaceholders) {
+            //         if (placeholder.images.length > 0) {
+            //             let oldValueY = placeholder.images[0].y;
+            //             //let oldValueX = placeholder.images[0].x;
+            //             placeholder.images[0].scale *= 0.853;
+            //             placeholder.images[0].y *= 0.996;
+            //             //placeholder.images[0].x *= 0.999
+            //             console.log(`AUS: Y Scale changed from ${oldValueY} to ${placeholder.images[0].y}`);
+            //             //console.log(`AUS: X Scale changed from ${oldValueX} to ${placeholder.images[0].x}`);
+            //         }
+            //     }
+            // }
+
+            const canPrintAreaWidth = 3600;
+            const canPrintAreaHeight = 4800;
+            const canCollarDistance = 570;
+
+            // Setting the scale/y/x values for each country
+            if (printProvider.country === 'US') {
+                for (const placeholder of newPlaceholders) {
+                    if (placeholder.images.length > 0) {
+                        let printAreaWidth = 4500;
+                        let printAreaHeight = 5100;
+                        let thisCollarDistance = 571;
+                        ///////////////////////////
+                        let canadaScale = placeholder.images[0].scale;
+                        let targetWidthInPixels = canPrintAreaWidth * canadaScale;
+                        let newScale = targetWidthInPixels / printAreaWidth;
+                        //console.log(`US: Scale changed from ${canadaScale} to ${newScale} based on ${targetWidthInPixels} / ${printAreaWidth}`);
+                        placeholder.images[0].scale = newScale;
+                        // Now calculate Y co-ordinate
+                        //Calculate Canada positioning
+                        let canValueY = placeholder.images[0].y;
+                        let canPixelsFromTopOfPrintArea = canPrintAreaHeight * canValueY;
+                        let canPixelsFromBottomOfCollar = canPixelsFromTopOfPrintArea + canCollarDistance;
+                        // Now work out what the US positioning should be
+                        let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
+                        let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
+                        placeholder.images[0].y = valueY;
+                        console.log(`US: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
+                    }
+                }
+            } else if (printProvider.country === 'UK') {
+                for (const placeholder of newPlaceholders) {
+                    if (placeholder.images.length > 0) {
+                        let printAreaWidth = 4500;
+                        let printAreaHeight = 5700;
+                        let thisCollarDistance = 124;
+                        ////////////////////
+                        let canadaScale = placeholder.images[0].scale;
+                        let targetWidthInPixels = canPrintAreaWidth * canadaScale;
+                        let newScale = targetWidthInPixels / printAreaWidth;
+                        //console.log(`UK: Scale changed from ${canadaScale} to ${newScale} based on ${targetWidthInPixels} / ${printAreaWidth}`);
+                        placeholder.images[0].scale = newScale;
+                        // Now calculate Y co-ordinate
+                        //Calculate Canada positioning
+                        let canValueY = placeholder.images[0].y;
+                        let canPixelsFromTopOfPrintArea = canPrintAreaHeight * canValueY;
+                        let canPixelsFromBottomOfCollar = canPixelsFromTopOfPrintArea + canCollarDistance;
+                        // Now work out what the UK positioning should be
+                        let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
+                        let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
+                        placeholder.images[0].y = valueY;
+                        console.log(`UK: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
+                    }
+                }
+            } else if (printProvider.country === 'EU') {
+                for (const placeholder of newPlaceholders) {
+                    if (placeholder.images.length > 0) {
+                        let printAreaWidth = 4606;
+                        let printAreaHeight = 5787;
+                        let thisCollarDistance = 119;
+                        //////////////////////
+                        let canadaScale = placeholder.images[0].scale;
+                        let targetWidthInPixels = canPrintAreaWidth * canadaScale;
+                        let newScale = targetWidthInPixels / printAreaWidth;
+                        //console.log(`EU: Scale changed from ${canadaScale} to ${newScale} based on ${targetWidthInPixels} / ${printAreaWidth}`);
+                        placeholder.images[0].scale = newScale;
+                        // Now calculate Y co-ordinate
+                        //Calculate Canada positioning
+                        let canValueY = placeholder.images[0].y;
+                        let canPixelsFromTopOfPrintArea = canPrintAreaHeight * canValueY;
+                        let canPixelsFromBottomOfCollar = canPixelsFromTopOfPrintArea + canCollarDistance;
+                        // Now work out what the EU positioning should be
+                        let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
+                        let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
+                        placeholder.images[0].y = valueY;
+                        console.log(`EU: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
+                    }
+                }
+            } else if (printProvider.country === 'AUS') {
+                for (const placeholder of newPlaceholders) {
+                    if (placeholder.images.length > 0) {
+                        let printAreaWidth = 4200;
+                        let printAreaHeight = 4800;
+                        let thisCollarDistance = 574;
+                        ////////////////////
+                        let canadaScale = placeholder.images[0].scale;
+                        let targetWidthInPixels = canPrintAreaWidth * canadaScale;
+                        let newScale = targetWidthInPixels / printAreaWidth;
+                        //console.log(`AUS: Scale changed from ${canadaScale} to ${newScale} based on ${targetWidthInPixels} / ${printAreaWidth}`);
+                        placeholder.images[0].scale = newScale;
+                        // Now calculate Y co-ordinate
+                        //Calculate Canada positioning
+                        let canValueY = placeholder.images[0].y;
+                        let canPixelsFromTopOfPrintArea = canPrintAreaHeight * canValueY;
+                        let canPixelsFromBottomOfCollar = canPixelsFromTopOfPrintArea + canCollarDistance;
+                        // Now work out what the EU positioning should be
+                        let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
+                        let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
+                        placeholder.images[0].y = valueY;
+                        console.log(`AUS: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
+                    }
+                }
+            }
+
+            // const canPrintAreaWidth = 3600;
+            // const canPrintAreaHeight = 4800;
+            // // aspect ratio = 0.75
+
+            // if (printProvider.country === 'US') {
+            //     for (const placeholder of newPlaceholders) {
+            //         if (placeholder.images.length > 0) {
+            //             //Monster Digital Gildan 5000 Tee
+            //             let newPrintAreaWidth = 4500;
+            //             let newPrintAreaHeight = 5100;
+                           // // aspect ratio = 0.882
+            //             let oldValueScale = placeholder.images[0].scale;
+            //             let oldValueImageWidth = placeholder.images[0].width;
+            //             let oldValueImageHeight = placeholder.images[0].height;
+            //             // Calculate new scale
+            //             let scaleRatio = newPrintAreaHeight / canPrintAreaHeight;
+            //             let newScale = oldValueScale * scaleRatio;
+            //             console.log(`US scaleRatio is ${scaleRatio}, so changed scale from ${oldValueScale} to ${newScale}`);
+            //             placeholder.images[0].scale = newScale;
+            //         }
+            //     }
+            // } else if (printProvider.country === 'UK') {
+            //     for (const placeholder of newPlaceholders) {
+            //         if (placeholder.images.length > 0) {
+            //             //T Shirt and Sons Gildan 5000 Tee
+            //             let newPrintAreaWidth = 4500;
+            //             let newPrintAreaHeight = 5700;
+                            // // aspect ratio = 0.789
+            //             let oldValueScale = placeholder.images[0].scale;
+            //             let oldValueImageWidth = placeholder.images[0].width;
+            //             let oldValueImageHeight = placeholder.images[0].height;
+            //             // Calculate new scale
+            //             let scaleRatio = newPrintAreaHeight / canPrintAreaHeight;
+            //             let newScale = oldValueScale * scaleRatio;
+            //             console.log(`UK scaleRatio is ${scaleRatio}, so changed scale from ${oldValueScale} to ${newScale}`);
+            //             placeholder.images[0].scale = newScale;
+            //         }
+            //     }
+            // } else if (printProvider.country === 'EU') {
+            //     for (const placeholder of newPlaceholders) {
+            //         if (placeholder.images.length > 0) {
+            //             //Textildruck Europa Gildan 5000 Tee
+            //             let newPrintAreaWidth = 4606;
+            //             let newPrintAreaHeight = 5787;
+                            // // aspect ratio = 0.796
+            //             let oldValueScale = placeholder.images[0].scale;
+            //             let oldValueImageWidth = placeholder.images[0].width;
+            //             let oldValueImageHeight = placeholder.images[0].height;
+            //             // Calculate new scale
+            //             let scaleRatio = newPrintAreaHeight / canPrintAreaHeight;
+            //             let newScale = oldValueScale * scaleRatio;
+            //             console.log(`EU scaleRatio is ${scaleRatio}, so changed scale from ${oldValueScale} to ${newScale}`);
+            //             placeholder.images[0].scale = newScale;
+            //         }
+            //     }
+            // } else if (printProvider.country === 'AUS') {
+            //     for (const placeholder of newPlaceholders) {
+            //         if (placeholder.images.length > 0) {
+            //             //Prima Printing Gildan 5000 Tee
+            //             let newPrintAreaWidth = 4200;
+            //             let newPrintAreaHeight = 4800;
+                            // // aspect ratio = 0.875
+            //             let oldValueScale = placeholder.images[0].scale;
+            //             let oldValueImageWidth = placeholder.images[0].width;
+            //             let oldValueImageHeight = placeholder.images[0].height;
+            //             // Calculate new scale
+            //             let scaleRatio = newPrintAreaHeight / canPrintAreaHeight;
+            //             let newScale = oldValueScale * scaleRatio;
+            //             console.log(`AUS scaleRatio is ${scaleRatio}, so changed scale from ${oldValueScale} to ${newScale}`);
+            //             placeholder.images[0].scale = newScale;
+            //         }
+            //     }
+            // }
 
             // Setting the UK print provider ID depending on whether the listing is a tee or sweater/hoodie
             let printProviderID;
@@ -338,20 +422,9 @@ async function executeMainLogicTest() {
     // End of 'for (listing of eligibleListings)'
     }
 
-    // Now PUT request to update the CANADA listing in each eligibleListings item
-    // This is done after the new country listings have been created in case there was an error
-    for (const listing of eligibleListings) {
-        try {
-            let success = await updateCanadaSkus(listing);
-            console.log(`Canada API SKU update for listing ${listing.listing_title} was ${success ? 'successful' : 'unsuccessful'}`);
-        } catch (error) {
-            console.error(error);
-            console.error(`Error in catch block when updating API Canada SKUs for ${listing.listing_title}`);
-        }
-    }
 
     console.log('Completed main process');
     //res.send(`<pre>${JSON.stringify(responseAllProducts.data, null, 2)}</pre>`);
 }
 
-module.exports = executeMainLogicTest;
+module.exports = executeMainTestLogic;

@@ -214,55 +214,232 @@ async function executeMainLogic() {
             }
 
             // Setting the scale/y/x values for each country
+            // if (printProvider.country === 'US') {
+            //     for (const placeholder of newPlaceholders) {
+            //         if (placeholder.images.length > 0) {
+            //             let oldValueY = placeholder.images[0].y;
+            //             //let oldValueX = placeholder.images[0].x;
+            //             placeholder.images[0].scale *= 0.798;
+            //             placeholder.images[0].y *= 0.940;
+            //             //placeholder.images[0].x *= 0.999;
+            //             console.log(`US: Y Scale changed from ${oldValueY} to ${placeholder.images[0].y}`);
+            //             //console.log(`US: X Scale changed from ${oldValueX} to ${placeholder.images[0].x}`);
+            //         }
+            //     }
+            // } else if (printProvider.country === 'UK') {
+            //     for (const placeholder of newPlaceholders) {
+            //         if (placeholder.images.length > 0) {
+            //             let oldValueY = placeholder.images[0].y;
+            //             //let oldValueX = placeholder.images[0].x;
+            //             placeholder.images[0].scale *= 0.8;
+            //             placeholder.images[0].y *= 1.045;
+            //             //placeholder.images[0].x *= 0.999
+            //             console.log(`UK: Y Scale changed from ${oldValueY} to ${placeholder.images[0].y}`);
+            //             //console.log(`UK: X Scale changed from ${oldValueX} to ${placeholder.images[0].x}`);
+            //         }
+            //     }
+            // } else if (printProvider.country === 'EU') {
+            //     for (const placeholder of newPlaceholders) {
+            //         if (placeholder.images.length > 0) {
+            //             let oldValueY = placeholder.images[0].y;
+            //             //let oldValueX = placeholder.images[0].x;
+            //             placeholder.images[0].scale *= 0.781;
+            //             placeholder.images[0].y *= 1.034;
+            //             //placeholder.images[0].x *= 0.999
+            //             console.log(`EU: Y Scale changed from ${oldValueY} to ${placeholder.images[0].y}`);
+            //             //console.log(`EU: X Scale changed from ${oldValueX} to ${placeholder.images[0].x}`);
+            //         }
+            //     }
+            // } else if (printProvider.country === 'AUS') {
+            //     for (const placeholder of newPlaceholders) {
+            //         if (placeholder.images.length > 0) {
+            //             let oldValueY = placeholder.images[0].y;
+            //             //let oldValueX = placeholder.images[0].x;
+            //             placeholder.images[0].scale *= 0.853;
+            //             placeholder.images[0].y *= 0.996;
+            //             //placeholder.images[0].x *= 0.999
+            //             console.log(`AUS: Y Scale changed from ${oldValueY} to ${placeholder.images[0].y}`);
+            //             //console.log(`AUS: X Scale changed from ${oldValueX} to ${placeholder.images[0].x}`);
+            //         }
+            //     }
+            // }
+
+            const canPrintAreaWidth = 3600;
+            const canPrintAreaHeight = 4800;
+            const canCollarDistance = 570;
+
+            // Setting the scale/y/x values for each country
             if (printProvider.country === 'US') {
                 for (const placeholder of newPlaceholders) {
                     if (placeholder.images.length > 0) {
-                        let oldValueY = placeholder.images[0].y;
-                        //let oldValueX = placeholder.images[0].x;
-                        placeholder.images[0].scale *= 0.798;
-                        placeholder.images[0].y *= 0.940;
-                        //placeholder.images[0].x *= 0.999;
-                        console.log(`US: Y Scale changed from ${oldValueY} to ${placeholder.images[0].y}`);
-                        //console.log(`US: X Scale changed from ${oldValueX} to ${placeholder.images[0].x}`);
+                        let printAreaWidth = 4500;
+                        let printAreaHeight = 5100;
+                        let thisCollarDistance = 571;
+                        ///////////////////////////
+                        let canadaScale = placeholder.images[0].scale;
+                        let targetWidthInPixels = canPrintAreaWidth * canadaScale;
+                        let newScale = targetWidthInPixels / printAreaWidth;
+                        //console.log(`US: Scale changed from ${canadaScale} to ${newScale} based on ${targetWidthInPixels} / ${printAreaWidth}`);
+                        placeholder.images[0].scale = newScale;
+                        // Now calculate Y co-ordinate
+                        //Calculate Canada positioning
+                        let canValueY = placeholder.images[0].y;
+                        let canPixelsFromTopOfPrintArea = canPrintAreaHeight * canValueY;
+                        let canPixelsFromBottomOfCollar = canPixelsFromTopOfPrintArea + canCollarDistance;
+                        // Now work out what the US positioning should be
+                        let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
+                        let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
+                        placeholder.images[0].y = valueY;
+                        console.log(`US: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
                     }
                 }
             } else if (printProvider.country === 'UK') {
                 for (const placeholder of newPlaceholders) {
                     if (placeholder.images.length > 0) {
-                        let oldValueY = placeholder.images[0].y;
-                        //let oldValueX = placeholder.images[0].x;
-                        placeholder.images[0].scale *= 0.8;
-                        placeholder.images[0].y *= 1.045;
-                        //placeholder.images[0].x *= 0.999
-                        console.log(`UK: Y Scale changed from ${oldValueY} to ${placeholder.images[0].y}`);
-                        //console.log(`UK: X Scale changed from ${oldValueX} to ${placeholder.images[0].x}`);
+                        let printAreaWidth = 4500;
+                        let printAreaHeight = 5700;
+                        let thisCollarDistance = 124;
+                        ////////////////////
+                        let canadaScale = placeholder.images[0].scale;
+                        let targetWidthInPixels = canPrintAreaWidth * canadaScale;
+                        let newScale = targetWidthInPixels / printAreaWidth;
+                        //console.log(`UK: Scale changed from ${canadaScale} to ${newScale} based on ${targetWidthInPixels} / ${printAreaWidth}`);
+                        placeholder.images[0].scale = newScale;
+                        // Now calculate Y co-ordinate
+                        //Calculate Canada positioning
+                        let canValueY = placeholder.images[0].y;
+                        let canPixelsFromTopOfPrintArea = canPrintAreaHeight * canValueY;
+                        let canPixelsFromBottomOfCollar = canPixelsFromTopOfPrintArea + canCollarDistance;
+                        // Now work out what the UK positioning should be
+                        let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
+                        let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
+                        placeholder.images[0].y = valueY;
+                        console.log(`UK: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
                     }
                 }
             } else if (printProvider.country === 'EU') {
                 for (const placeholder of newPlaceholders) {
                     if (placeholder.images.length > 0) {
-                        let oldValueY = placeholder.images[0].y;
-                        //let oldValueX = placeholder.images[0].x;
-                        placeholder.images[0].scale *= 0.781;
-                        placeholder.images[0].y *= 1.034;
-                        //placeholder.images[0].x *= 0.999
-                        console.log(`EU: Y Scale changed from ${oldValueY} to ${placeholder.images[0].y}`);
-                        //console.log(`EU: X Scale changed from ${oldValueX} to ${placeholder.images[0].x}`);
+                        let printAreaWidth = 4606;
+                        let printAreaHeight = 5787;
+                        let thisCollarDistance = 119;
+                        //////////////////////
+                        let canadaScale = placeholder.images[0].scale;
+                        let targetWidthInPixels = canPrintAreaWidth * canadaScale;
+                        let newScale = targetWidthInPixels / printAreaWidth;
+                        //console.log(`EU: Scale changed from ${canadaScale} to ${newScale} based on ${targetWidthInPixels} / ${printAreaWidth}`);
+                        placeholder.images[0].scale = newScale;
+                        // Now calculate Y co-ordinate
+                        //Calculate Canada positioning
+                        let canValueY = placeholder.images[0].y;
+                        let canPixelsFromTopOfPrintArea = canPrintAreaHeight * canValueY;
+                        let canPixelsFromBottomOfCollar = canPixelsFromTopOfPrintArea + canCollarDistance;
+                        // Now work out what the EU positioning should be
+                        let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
+                        let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
+                        placeholder.images[0].y = valueY;
+                        console.log(`EU: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
                     }
                 }
             } else if (printProvider.country === 'AUS') {
                 for (const placeholder of newPlaceholders) {
                     if (placeholder.images.length > 0) {
-                        let oldValueY = placeholder.images[0].y;
-                        //let oldValueX = placeholder.images[0].x;
-                        placeholder.images[0].scale *= 0.853;
-                        placeholder.images[0].y *= 0.996;
-                        //placeholder.images[0].x *= 0.999
-                        console.log(`AUS: Y Scale changed from ${oldValueY} to ${placeholder.images[0].y}`);
-                        //console.log(`AUS: X Scale changed from ${oldValueX} to ${placeholder.images[0].x}`);
+                        let printAreaWidth = 4200;
+                        let printAreaHeight = 4800;
+                        let thisCollarDistance = 574;
+                        ////////////////////
+                        let canadaScale = placeholder.images[0].scale;
+                        let targetWidthInPixels = canPrintAreaWidth * canadaScale;
+                        let newScale = targetWidthInPixels / printAreaWidth;
+                        //console.log(`AUS: Scale changed from ${canadaScale} to ${newScale} based on ${targetWidthInPixels} / ${printAreaWidth}`);
+                        placeholder.images[0].scale = newScale;
+                        // Now calculate Y co-ordinate
+                        //Calculate Canada positioning
+                        let canValueY = placeholder.images[0].y;
+                        let canPixelsFromTopOfPrintArea = canPrintAreaHeight * canValueY;
+                        let canPixelsFromBottomOfCollar = canPixelsFromTopOfPrintArea + canCollarDistance;
+                        // Now work out what the EU positioning should be
+                        let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
+                        let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
+                        placeholder.images[0].y = valueY;
+                        console.log(`AUS: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
                     }
                 }
             }
+
+            // const canPrintAreaWidth = 3600;
+            // const canPrintAreaHeight = 4800;
+            // // aspect ratio = 0.75
+
+            // if (printProvider.country === 'US') {
+            //     for (const placeholder of newPlaceholders) {
+            //         if (placeholder.images.length > 0) {
+            //             //Monster Digital Gildan 5000 Tee
+            //             let newPrintAreaWidth = 4500;
+            //             let newPrintAreaHeight = 5100;
+                           // // aspect ratio = 0.882
+            //             let oldValueScale = placeholder.images[0].scale;
+            //             let oldValueImageWidth = placeholder.images[0].width;
+            //             let oldValueImageHeight = placeholder.images[0].height;
+            //             // Calculate new scale
+            //             let scaleRatio = newPrintAreaHeight / canPrintAreaHeight;
+            //             let newScale = oldValueScale * scaleRatio;
+            //             console.log(`US scaleRatio is ${scaleRatio}, so changed scale from ${oldValueScale} to ${newScale}`);
+            //             placeholder.images[0].scale = newScale;
+            //         }
+            //     }
+            // } else if (printProvider.country === 'UK') {
+            //     for (const placeholder of newPlaceholders) {
+            //         if (placeholder.images.length > 0) {
+            //             //T Shirt and Sons Gildan 5000 Tee
+            //             let newPrintAreaWidth = 4500;
+            //             let newPrintAreaHeight = 5700;
+                            // // aspect ratio = 0.789
+            //             let oldValueScale = placeholder.images[0].scale;
+            //             let oldValueImageWidth = placeholder.images[0].width;
+            //             let oldValueImageHeight = placeholder.images[0].height;
+            //             // Calculate new scale
+            //             let scaleRatio = newPrintAreaHeight / canPrintAreaHeight;
+            //             let newScale = oldValueScale * scaleRatio;
+            //             console.log(`UK scaleRatio is ${scaleRatio}, so changed scale from ${oldValueScale} to ${newScale}`);
+            //             placeholder.images[0].scale = newScale;
+            //         }
+            //     }
+            // } else if (printProvider.country === 'EU') {
+            //     for (const placeholder of newPlaceholders) {
+            //         if (placeholder.images.length > 0) {
+            //             //Textildruck Europa Gildan 5000 Tee
+            //             let newPrintAreaWidth = 4606;
+            //             let newPrintAreaHeight = 5787;
+                            // // aspect ratio = 0.796
+            //             let oldValueScale = placeholder.images[0].scale;
+            //             let oldValueImageWidth = placeholder.images[0].width;
+            //             let oldValueImageHeight = placeholder.images[0].height;
+            //             // Calculate new scale
+            //             let scaleRatio = newPrintAreaHeight / canPrintAreaHeight;
+            //             let newScale = oldValueScale * scaleRatio;
+            //             console.log(`EU scaleRatio is ${scaleRatio}, so changed scale from ${oldValueScale} to ${newScale}`);
+            //             placeholder.images[0].scale = newScale;
+            //         }
+            //     }
+            // } else if (printProvider.country === 'AUS') {
+            //     for (const placeholder of newPlaceholders) {
+            //         if (placeholder.images.length > 0) {
+            //             //Prima Printing Gildan 5000 Tee
+            //             let newPrintAreaWidth = 4200;
+            //             let newPrintAreaHeight = 4800;
+                            // // aspect ratio = 0.875
+            //             let oldValueScale = placeholder.images[0].scale;
+            //             let oldValueImageWidth = placeholder.images[0].width;
+            //             let oldValueImageHeight = placeholder.images[0].height;
+            //             // Calculate new scale
+            //             let scaleRatio = newPrintAreaHeight / canPrintAreaHeight;
+            //             let newScale = oldValueScale * scaleRatio;
+            //             console.log(`AUS scaleRatio is ${scaleRatio}, so changed scale from ${oldValueScale} to ${newScale}`);
+            //             placeholder.images[0].scale = newScale;
+            //         }
+            //     }
+            // }
 
             // Setting the UK print provider ID depending on whether the listing is a tee or sweater/hoodie
             let printProviderID;

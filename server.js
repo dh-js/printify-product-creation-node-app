@@ -15,7 +15,8 @@ console.log('Running in:', process.env.NODE_ENV || 'no environment specified');
 
 // IMPORT MAIN PROCESS
 const executeMainLogic = require('./main');
-//const executeMainLogicTest = require('./main_test');
+// const testPrintAreas = require('./test_print_areas');
+// const executeMainTestLogic = require('./main_test');
 
 app.get('/', (req, res) => {
     res.send('App is Running!');
@@ -40,14 +41,25 @@ cron.schedule('*/5 * * * *', async function() {
     }
 });
 
-// Hit the below endpoint to run the main logic during local dev
-// app.get('/productCreationProcess', async (req, res) => {
+// Hit the below endpoint to run a test during local dev
+// app.get('/testPrintAreas', async (req, res) => {
 //     try {
-//         const allProductsData = await executeMainLogicTest();
+//         const allProductsData = await testPrintAreas();
 //         res.send(`<pre>${JSON.stringify(allProductsData, null, 2)}</pre>`);
 //     } catch (error) {
-//         console.error('Error executing main_test logic:', error);
-//         res.status(500).send('An error occurred while executing main logic');
+//         console.error('Error executing testPrintAreas logic:', error);
+//         res.status(500).send('An error occurred while executing testPrintAreas');
+//     }
+// });
+
+// Hit the below endpoint to run the main logic during local dev
+// app.get('/mainTest', async (req, res) => {
+//     try {
+//         const allProductsData = await executeMainTestLogic();
+//         res.send(`<pre>${JSON.stringify(allProductsData, null, 2)}</pre>`);
+//     } catch (error) {
+//         console.error('Error executing executeMainTestLogic logic:', error);
+//         res.status(500).send('An error occurred while executing executeMainTestLogic');
 //     }
 // });
 
@@ -58,7 +70,7 @@ app.listen(PORT, () => {
 // Use below block to automatically open browser window during local development
 // app.listen(PORT, () => {
 //     console.log(`Server is running on port ${PORT}`);
-//     exec(`start http://localhost:${PORT}/productCreationProcess`, (err, stdout, stderr) => {
+//     exec(`start http://localhost:${PORT}/mainTest`, (err, stdout, stderr) => {
 //         if (err) {
 //             console.error(`exec error: ${err}`);
 //             return;
