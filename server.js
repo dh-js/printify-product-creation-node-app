@@ -15,8 +15,8 @@ console.log('Running in:', process.env.NODE_ENV || 'no environment specified');
 
 // IMPORT MAIN PROCESS
 const executeMainLogic = require('./main');
-// const testPrintAreas = require('./test_print_areas');
-// const executeMainTestLogic = require('./main_test');
+//const testPrintAreas = require('./test_print_areas');
+//const executeMainTestLogic = require('./main_test');
 
 app.get('/', (req, res) => {
     res.send('App is Running!');

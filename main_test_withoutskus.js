@@ -1,6 +1,8 @@
 const { fetchAllListings, updateCanadaSkus, createNewCountryListing } = require('./helper_functions');
 
-async function executeMainLogic() {
+async function executeMainTestWithoutSkusLogic() {
+
+    //REMOVED THE SKU INVOLVEMENT SO THAT I CAN TEST THE CODE ON MY TEST STORE
 
     // First, fetch the first 2 pages (200) listings from Printify store and store them in allProductsData array
     let allProductsData = [];
@@ -19,13 +21,10 @@ async function executeMainLogic() {
     // Loop through all listings and find the ones that have only the 'small SKU' set up, push them to eligibleListings
     for (const listing of allProductsData) {
         try{
-            // Only push listings that are either a tee, sweater or hoodie (id values)
-            if (![49, 6, 77].includes(listing.blueprint_id)) {
+            // Only push listings that have 'testnow' in the title
+            if (!listing.title.toLowerCase().includes('testnow')) {
                 continue;
             }
-
-            let hasOnlyOneSKUPerSize = true;
-            let hasAtLeastOneSKU = false;
 
             if (listing.variants) {
                 let myVersionOfTheListing = {
@@ -54,26 +53,8 @@ async function executeMainLogic() {
                     myVersionOfTheListing.listing_variants[color][size] = variant;
                 }
 
-                // Now check if the listing only has small SKUs
-                for (const color in myVersionOfTheListing.listing_variants) {
-                    let counter = 0;
-                    for (const size in myVersionOfTheListing.listing_variants[color]) {
-                        let sku = myVersionOfTheListing.listing_variants[color][size].sku.trim();
-                        if (sku.toUpperCase().endsWith('-CAN')) {
-                            counter++
-                        }
-                    }
-                    if (counter > 1) {
-                        hasOnlyOneSKUPerSize = false;
-                    }
-                    if (counter > 0) {
-                        hasAtLeastOneSKU = true;
-                    }
-                }
-
-                if (hasOnlyOneSKUPerSize && hasAtLeastOneSKU && listing.print_provider_id === 27) {
-                    eligibleListings.push(myVersionOfTheListing);
-                }
+            eligibleListings.push(myVersionOfTheListing);
+            
             }
         } catch (error) {
             console.error(`Error processing listing '${listing.title}': ${error.message}`);
@@ -87,43 +68,9 @@ async function executeMainLogic() {
 
     console.log(`Found ${eligibleListings.length} eligible listings`)
 
-    // res.send(`<pre>${JSON.stringify(eligibleListings, null, 2)}</pre>`);
-    // return;
 
-    //So eligibleListings will now contain any 'STARTER (CANADA SMALL SKU)' listings
-    //Now we need to loop through each listing to update the SKUs
-    for (const listing of eligibleListings) {
-        try {
-            // For each color of the listing
-            for (const color in listing.listing_variants) {
-                // If this color has a custom small SKU
-                if (isNaN(listing.listing_variants[color]['S'].sku)) {
-                    // Clean the starter SKU by removing all spaces
-                    let smallSKU = listing.listing_variants[color]['S'].sku.replace(/ /g, '');
-                    let baseSKU;
-                    if (smallSKU.toUpperCase().endsWith('-S-CAN')) {
-                        baseSKU = smallSKU.slice(0, -6);
-                        // Loop through each size and set the SKU to the baseSKU + the size 
-                        //(Also reset the small SKU value in case it contained spaces)
-                        for (const size in listing.listing_variants[color]) {
-                            if (size !== '5XL') {
-                                listing.listing_variants[color][size].sku = baseSKU + '-' + size + '-CAN';
-                            }
-                        }
-                    } else {
-                        throw new Error('smallSKU does not end with -S-CAN');
-                    }
-                }
-            }
-        } catch (error) {
-            console.error(`Error updating listing object for '${listing.listing_title}': ${error.message}`);
-        }
-    }
+    //return eligibleListings;
 
-    console.log('All eligible listings objects have been updated with the correct Canada SKUs');
-
-    // res.send(`<pre>${JSON.stringify(eligibleListings, null, 2)}</pre>`);
-    // return;
 
     // First, create the other country listings
     // Note the available_variant_ids should be taken from the print area variant ids of an existing listing on Printify
@@ -178,18 +125,11 @@ async function executeMainLogic() {
                     let variantId = listing.listing_variants[color][size].id;
                     if (printProvider[listing.listing_blueprint_id].includes(variantId)) {
 
-                        let newSKU;
-                        if (listing.listing_variants[color][size].sku.endsWith('CAN')) {
-                            newSKU = listing.listing_variants[color][size].sku.slice(0, -3) + printProvider.country;
-                        }
                         let variant = {
                             "id": variantId,
                             "price": listing.listing_variants[color][size].price,
                             "is_enabled": listing.listing_variants[color][size].is_enabled
                         };
-                        if (newSKU) {
-                            variant.sku = newSKU;
-                        }
                         variantsArray.push(variant);
                         allVariantIDs.push(variantId);
                     }
@@ -213,49 +153,17 @@ async function executeMainLogic() {
                 }
             }
 
-            let productType;
-            listing.listing_blueprint_id === 6 ? productType = 'tee' : listing.listing_blueprint_id === 49 ? productType = 'sweater' : listing.listing_blueprint_id === 77 ? productType = 'hoodie' : productType = 'unknown';
-            // 3 options for productType: tee, sweater, hoodie
-            let canPrintAreaWidth;
-            let canPrintAreaHeight;
-            let canCollarDistance;
-            if (productType === 'tee') {
-                canPrintAreaWidth = 3600;
-                canPrintAreaHeight = 4800;
-                canCollarDistance = 570;
-            } else if (productType === 'sweater') {
-                canPrintAreaWidth = 4200;
-                canPrintAreaHeight = 4800;
-                canCollarDistance = 651;
-            } else if (productType === 'hoodie') {
-                canPrintAreaWidth = 4200;
-                canPrintAreaHeight = 2799;
-                canCollarDistance = 617;
-            }
-            
+            const canPrintAreaWidth = 3600;
+            const canPrintAreaHeight = 4800;
+            const canCollarDistance = 570;
+
             // Setting the scale/y/x values for each country
-            // The collar distance below was calculated in the Printify dashboard, by manually lining up the top of the
-            //image with the bottom of the t-shirt collar and then using the % offset from the print area to calculate
-            //the number of pixels from top of print area to bottom of collar
             if (printProvider.country === 'US') {
                 for (const placeholder of newPlaceholders) {
                     if (placeholder.images.length > 0) {
-                        let printAreaWidth;
-                        let printAreaHeight;
-                        let thisCollarDistance;
-                        if (productType === 'tee') {
-                            printAreaWidth = 4500;
-                            printAreaHeight = 5100;
-                            thisCollarDistance = 571;
-                        } else if (productType === 'sweater') {
-                            printAreaWidth = 4500;
-                            printAreaHeight = 5100;
-                            thisCollarDistance = 649;
-                        } else if (productType === 'hoodie') {
-                            printAreaWidth = 4500;
-                            printAreaHeight = 3000;
-                            thisCollarDistance = 627;
-                        }
+                        let printAreaWidth = 4500;
+                        let printAreaHeight = 5100;
+                        let thisCollarDistance = 571;
                         ///////////////////////////
                         let canadaScale = placeholder.images[0].scale;
                         let targetWidthInPixels = canPrintAreaWidth * canadaScale;
@@ -271,28 +179,15 @@ async function executeMainLogic() {
                         let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
                         let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
                         placeholder.images[0].y = valueY;
-                        //console.log(`US: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
+                        console.log(`US: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
                     }
                 }
             } else if (printProvider.country === 'UK') {
                 for (const placeholder of newPlaceholders) {
                     if (placeholder.images.length > 0) {
-                        let printAreaWidth;
-                        let printAreaHeight;
-                        let thisCollarDistance;
-                        if (productType === 'tee') {
-                            printAreaWidth = 4500;
-                            printAreaHeight = 5700;
-                            thisCollarDistance = 124;
-                        } else if (productType === 'sweater') {
-                            printAreaWidth = 4500;
-                            printAreaHeight = 5100;
-                            thisCollarDistance = 651;
-                        } else if (productType === 'hoodie') {
-                            printAreaWidth = 4500;
-                            printAreaHeight = 3000;
-                            thisCollarDistance = 632;
-                        }
+                        let printAreaWidth = 4500;
+                        let printAreaHeight = 5700;
+                        let thisCollarDistance = 124;
                         ////////////////////
                         let canadaScale = placeholder.images[0].scale;
                         let targetWidthInPixels = canPrintAreaWidth * canadaScale;
@@ -308,28 +203,15 @@ async function executeMainLogic() {
                         let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
                         let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
                         placeholder.images[0].y = valueY;
-                        //console.log(`UK: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
+                        console.log(`UK: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
                     }
                 }
             } else if (printProvider.country === 'EU') {
                 for (const placeholder of newPlaceholders) {
                     if (placeholder.images.length > 0) {
-                        let printAreaWidth;
-                        let printAreaHeight;
-                        let thisCollarDistance;
-                        if (productType === 'tee') {
-                            printAreaWidth = 4606;
-                            printAreaHeight = 5787;
-                            thisCollarDistance = 119;
-                        } else if (productType === 'sweater') {
-                            printAreaWidth = 4500;
-                            printAreaHeight = 5100;
-                            thisCollarDistance = 200;
-                        } else if (productType === 'hoodie') {
-                            printAreaWidth = 4016;
-                            printAreaHeight = 3307;
-                            thisCollarDistance = 181;
-                        }
+                        let printAreaWidth = 4606;
+                        let printAreaHeight = 5787;
+                        let thisCollarDistance = 119;
                         //////////////////////
                         let canadaScale = placeholder.images[0].scale;
                         let targetWidthInPixels = canPrintAreaWidth * canadaScale;
@@ -345,28 +227,15 @@ async function executeMainLogic() {
                         let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
                         let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
                         placeholder.images[0].y = valueY;
-                        //console.log(`EU: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
+                        console.log(`EU: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
                     }
                 }
             } else if (printProvider.country === 'AUS') {
                 for (const placeholder of newPlaceholders) {
                     if (placeholder.images.length > 0) {
-                        let printAreaWidth;
-                        let printAreaHeight;
-                        let thisCollarDistance;
-                        if (productType === 'tee') {
-                            printAreaWidth = 4200;
-                            printAreaHeight = 4800;
-                            thisCollarDistance = 574;
-                        } else if (productType === 'sweater') {
-                            printAreaWidth = 4200;
-                            printAreaHeight = 4800;
-                            thisCollarDistance = 649;
-                        } else if (productType === 'hoodie') {
-                            printAreaWidth = 4200;
-                            printAreaHeight = 2799;
-                            thisCollarDistance = 631;
-                        }
+                        let printAreaWidth = 4200;
+                        let printAreaHeight = 4800;
+                        let thisCollarDistance = 574;
                         ////////////////////
                         let canadaScale = placeholder.images[0].scale;
                         let targetWidthInPixels = canPrintAreaWidth * canadaScale;
@@ -382,7 +251,7 @@ async function executeMainLogic() {
                         let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
                         let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
                         placeholder.images[0].y = valueY;
-                        //console.log(`AUS: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
+                        console.log(`AUS: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
                     }
                 }
             }
@@ -428,20 +297,9 @@ async function executeMainLogic() {
     // End of 'for (listing of eligibleListings)'
     }
 
-    // Now PUT request to update the CANADA listing in each eligibleListings item
-    // This is done after the new country listings have been created in case there was an error
-    for (const listing of eligibleListings) {
-        try {
-            let success = await updateCanadaSkus(listing);
-            console.log(`Canada API SKU update for listing ${listing.listing_title} was ${success ? 'successful' : 'unsuccessful'}`);
-        } catch (error) {
-            console.error(error);
-            console.error(`Error in catch block when updating API Canada SKUs for ${listing.listing_title}`);
-        }
-    }
 
     console.log('Completed main process');
     //res.send(`<pre>${JSON.stringify(responseAllProducts.data, null, 2)}</pre>`);
 }
 
-module.exports = executeMainLogic;
+module.exports = executeMainTestWithoutSkusLogic;
