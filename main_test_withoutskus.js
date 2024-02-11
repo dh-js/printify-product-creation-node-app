@@ -6,7 +6,7 @@ async function executeMainTestWithoutSkusLogic() {
 
     // First, fetch the first 2 pages (200) listings from Printify store and store them in allProductsData array
     let allProductsData = [];
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 1; i++) {
         const products = await fetchAllListings(i);
         allProductsData.push(...products);
     }
@@ -22,7 +22,7 @@ async function executeMainTestWithoutSkusLogic() {
     for (const listing of allProductsData) {
         try{
             // Only push listings that have 'testnow' in the title
-            if (!listing.title.toLowerCase().includes('testnow')) {
+            if (!listing.title.toLowerCase().includes('gargle')) {
                 continue;
             }
 
@@ -69,7 +69,7 @@ async function executeMainTestWithoutSkusLogic() {
     console.log(`Found ${eligibleListings.length} eligible listings`)
 
 
-    //return eligibleListings;
+    return eligibleListings;
 
 
     // First, create the other country listings

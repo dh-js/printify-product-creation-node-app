@@ -204,14 +204,17 @@ async function executeMainLogic() {
 
             // Create a new array of only the placeholders that have images, empty placeholders will cause an 400 error
             // Note that the below is based on the assumption there is onyl 1 print area item(listing_print_areas[0])
-            let newPlaceholders = [];
-            for (const placeholder of listing.listing_print_areas[0].placeholders) {
-                if (placeholder.images.length > 0) {
+            let newPrintAreas = listing.listing_print_areas.map(printArea => {
+                let newPlaceholders = printArea.placeholders.filter(placeholder => placeholder.images.length > 0).map(placeholder => {
                     // Create a deep copy of the placeholder
-                    let newPlaceholder = JSON.parse(JSON.stringify(placeholder));
-                    newPlaceholders.push(newPlaceholder);
-                }
-            }
+                    return JSON.parse(JSON.stringify(placeholder));
+                });
+            
+                return {
+                    variant_ids: printArea.variant_ids,
+                    placeholders: newPlaceholders
+                };
+            });
 
             let productType;
             listing.listing_blueprint_id === 6 ? productType = 'tee' : listing.listing_blueprint_id === 49 ? productType = 'sweater' : listing.listing_blueprint_id === 77 ? productType = 'hoodie' : productType = 'unknown';
@@ -237,152 +240,154 @@ async function executeMainLogic() {
             // The collar distance below was calculated in the Printify dashboard, by manually lining up the top of the
             //image with the bottom of the t-shirt collar and then using the % offset from the print area to calculate
             //the number of pixels from top of print area to bottom of collar
-            if (printProvider.country === 'US') {
-                for (const placeholder of newPlaceholders) {
-                    if (placeholder.images.length > 0) {
-                        let printAreaWidth;
-                        let printAreaHeight;
-                        let thisCollarDistance;
-                        if (productType === 'tee') {
-                            printAreaWidth = 4500;
-                            printAreaHeight = 5100;
-                            thisCollarDistance = 571;
-                        } else if (productType === 'sweater') {
-                            printAreaWidth = 4500;
-                            printAreaHeight = 5100;
-                            thisCollarDistance = 649;
-                        } else if (productType === 'hoodie') {
-                            printAreaWidth = 4500;
-                            printAreaHeight = 3000;
-                            thisCollarDistance = 627;
+            for (printArea of newPrintAreas) {
+                if (printProvider.country === 'US') {
+                    for (const placeholder of printArea.placeholders) {
+                        if (placeholder.images.length > 0) {
+                            let printAreaWidth;
+                            let printAreaHeight;
+                            let thisCollarDistance;
+                            if (productType === 'tee') {
+                                printAreaWidth = 4500;
+                                printAreaHeight = 5100;
+                                thisCollarDistance = 571;
+                            } else if (productType === 'sweater') {
+                                printAreaWidth = 4500;
+                                printAreaHeight = 5100;
+                                thisCollarDistance = 649;
+                            } else if (productType === 'hoodie') {
+                                printAreaWidth = 4500;
+                                printAreaHeight = 3000;
+                                thisCollarDistance = 627;
+                            }
+                            ///////////////////////////
+                            let canadaScale = placeholder.images[0].scale;
+                            let targetWidthInPixels = canPrintAreaWidth * canadaScale;
+                            let newScale = targetWidthInPixels / printAreaWidth;
+                            //console.log(`US: Scale changed from ${canadaScale} to ${newScale} based on ${targetWidthInPixels} / ${printAreaWidth}`);
+                            placeholder.images[0].scale = newScale;
+                            // Now calculate Y co-ordinate
+                            //Calculate Canada positioning
+                            let canValueY = placeholder.images[0].y;
+                            let canPixelsFromTopOfPrintArea = canPrintAreaHeight * canValueY;
+                            let canPixelsFromBottomOfCollar = canPixelsFromTopOfPrintArea + canCollarDistance;
+                            // Now work out what the US positioning should be
+                            let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
+                            let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
+                            placeholder.images[0].y = valueY;
+                            //console.log(`US: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
                         }
-                        ///////////////////////////
-                        let canadaScale = placeholder.images[0].scale;
-                        let targetWidthInPixels = canPrintAreaWidth * canadaScale;
-                        let newScale = targetWidthInPixels / printAreaWidth;
-                        //console.log(`US: Scale changed from ${canadaScale} to ${newScale} based on ${targetWidthInPixels} / ${printAreaWidth}`);
-                        placeholder.images[0].scale = newScale;
-                        // Now calculate Y co-ordinate
-                        //Calculate Canada positioning
-                        let canValueY = placeholder.images[0].y;
-                        let canPixelsFromTopOfPrintArea = canPrintAreaHeight * canValueY;
-                        let canPixelsFromBottomOfCollar = canPixelsFromTopOfPrintArea + canCollarDistance;
-                        // Now work out what the US positioning should be
-                        let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
-                        let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
-                        placeholder.images[0].y = valueY;
-                        //console.log(`US: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
                     }
-                }
-            } else if (printProvider.country === 'UK') {
-                for (const placeholder of newPlaceholders) {
-                    if (placeholder.images.length > 0) {
-                        let printAreaWidth;
-                        let printAreaHeight;
-                        let thisCollarDistance;
-                        if (productType === 'tee') {
-                            printAreaWidth = 4500;
-                            printAreaHeight = 5700;
-                            thisCollarDistance = 124;
-                        } else if (productType === 'sweater') {
-                            printAreaWidth = 4500;
-                            printAreaHeight = 5100;
-                            thisCollarDistance = 651;
-                        } else if (productType === 'hoodie') {
-                            printAreaWidth = 4500;
-                            printAreaHeight = 3000;
-                            thisCollarDistance = 632;
+                } else if (printProvider.country === 'UK') {
+                    for (const placeholder of printArea.placeholders) {
+                        if (placeholder.images.length > 0) {
+                            let printAreaWidth;
+                            let printAreaHeight;
+                            let thisCollarDistance;
+                            if (productType === 'tee') {
+                                printAreaWidth = 4500;
+                                printAreaHeight = 5700;
+                                thisCollarDistance = 124;
+                            } else if (productType === 'sweater') {
+                                printAreaWidth = 4500;
+                                printAreaHeight = 5100;
+                                thisCollarDistance = 651;
+                            } else if (productType === 'hoodie') {
+                                printAreaWidth = 4500;
+                                printAreaHeight = 3000;
+                                thisCollarDistance = 632;
+                            }
+                            ////////////////////
+                            let canadaScale = placeholder.images[0].scale;
+                            let targetWidthInPixels = canPrintAreaWidth * canadaScale;
+                            let newScale = targetWidthInPixels / printAreaWidth;
+                            //console.log(`UK: Scale changed from ${canadaScale} to ${newScale} based on ${targetWidthInPixels} / ${printAreaWidth}`);
+                            placeholder.images[0].scale = newScale;
+                            // Now calculate Y co-ordinate
+                            //Calculate Canada positioning
+                            let canValueY = placeholder.images[0].y;
+                            let canPixelsFromTopOfPrintArea = canPrintAreaHeight * canValueY;
+                            let canPixelsFromBottomOfCollar = canPixelsFromTopOfPrintArea + canCollarDistance;
+                            // Now work out what the UK positioning should be
+                            let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
+                            let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
+                            placeholder.images[0].y = valueY;
+                            //console.log(`UK: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
                         }
-                        ////////////////////
-                        let canadaScale = placeholder.images[0].scale;
-                        let targetWidthInPixels = canPrintAreaWidth * canadaScale;
-                        let newScale = targetWidthInPixels / printAreaWidth;
-                        //console.log(`UK: Scale changed from ${canadaScale} to ${newScale} based on ${targetWidthInPixels} / ${printAreaWidth}`);
-                        placeholder.images[0].scale = newScale;
-                        // Now calculate Y co-ordinate
-                        //Calculate Canada positioning
-                        let canValueY = placeholder.images[0].y;
-                        let canPixelsFromTopOfPrintArea = canPrintAreaHeight * canValueY;
-                        let canPixelsFromBottomOfCollar = canPixelsFromTopOfPrintArea + canCollarDistance;
-                        // Now work out what the UK positioning should be
-                        let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
-                        let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
-                        placeholder.images[0].y = valueY;
-                        //console.log(`UK: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
                     }
-                }
-            } else if (printProvider.country === 'EU') {
-                for (const placeholder of newPlaceholders) {
-                    if (placeholder.images.length > 0) {
-                        let printAreaWidth;
-                        let printAreaHeight;
-                        let thisCollarDistance;
-                        if (productType === 'tee') {
-                            printAreaWidth = 4606;
-                            printAreaHeight = 5787;
-                            thisCollarDistance = 119;
-                        } else if (productType === 'sweater') {
-                            printAreaWidth = 4500;
-                            printAreaHeight = 5100;
-                            thisCollarDistance = 200;
-                        } else if (productType === 'hoodie') {
-                            printAreaWidth = 4016;
-                            printAreaHeight = 3307;
-                            thisCollarDistance = 181;
+                } else if (printProvider.country === 'EU') {
+                    for (const placeholder of printArea.placeholders) {
+                        if (placeholder.images.length > 0) {
+                            let printAreaWidth;
+                            let printAreaHeight;
+                            let thisCollarDistance;
+                            if (productType === 'tee') {
+                                printAreaWidth = 4606;
+                                printAreaHeight = 5787;
+                                thisCollarDistance = 119;
+                            } else if (productType === 'sweater') {
+                                printAreaWidth = 4500;
+                                printAreaHeight = 5100;
+                                thisCollarDistance = 200;
+                            } else if (productType === 'hoodie') {
+                                printAreaWidth = 4016;
+                                printAreaHeight = 3307;
+                                thisCollarDistance = 181;
+                            }
+                            //////////////////////
+                            let canadaScale = placeholder.images[0].scale;
+                            let targetWidthInPixels = canPrintAreaWidth * canadaScale;
+                            let newScale = targetWidthInPixels / printAreaWidth;
+                            //console.log(`EU: Scale changed from ${canadaScale} to ${newScale} based on ${targetWidthInPixels} / ${printAreaWidth}`);
+                            placeholder.images[0].scale = newScale;
+                            // Now calculate Y co-ordinate
+                            //Calculate Canada positioning
+                            let canValueY = placeholder.images[0].y;
+                            let canPixelsFromTopOfPrintArea = canPrintAreaHeight * canValueY;
+                            let canPixelsFromBottomOfCollar = canPixelsFromTopOfPrintArea + canCollarDistance;
+                            // Now work out what the EU positioning should be
+                            let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
+                            let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
+                            placeholder.images[0].y = valueY;
+                            //console.log(`EU: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
                         }
-                        //////////////////////
-                        let canadaScale = placeholder.images[0].scale;
-                        let targetWidthInPixels = canPrintAreaWidth * canadaScale;
-                        let newScale = targetWidthInPixels / printAreaWidth;
-                        //console.log(`EU: Scale changed from ${canadaScale} to ${newScale} based on ${targetWidthInPixels} / ${printAreaWidth}`);
-                        placeholder.images[0].scale = newScale;
-                        // Now calculate Y co-ordinate
-                        //Calculate Canada positioning
-                        let canValueY = placeholder.images[0].y;
-                        let canPixelsFromTopOfPrintArea = canPrintAreaHeight * canValueY;
-                        let canPixelsFromBottomOfCollar = canPixelsFromTopOfPrintArea + canCollarDistance;
-                        // Now work out what the EU positioning should be
-                        let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
-                        let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
-                        placeholder.images[0].y = valueY;
-                        //console.log(`EU: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
                     }
-                }
-            } else if (printProvider.country === 'AUS') {
-                for (const placeholder of newPlaceholders) {
-                    if (placeholder.images.length > 0) {
-                        let printAreaWidth;
-                        let printAreaHeight;
-                        let thisCollarDistance;
-                        if (productType === 'tee') {
-                            printAreaWidth = 4200;
-                            printAreaHeight = 4800;
-                            thisCollarDistance = 574;
-                        } else if (productType === 'sweater') {
-                            printAreaWidth = 4200;
-                            printAreaHeight = 4800;
-                            thisCollarDistance = 649;
-                        } else if (productType === 'hoodie') {
-                            printAreaWidth = 4200;
-                            printAreaHeight = 2799;
-                            thisCollarDistance = 631;
+                } else if (printProvider.country === 'AUS') {
+                    for (const placeholder of printArea.placeholders) {
+                        if (placeholder.images.length > 0) {
+                            let printAreaWidth;
+                            let printAreaHeight;
+                            let thisCollarDistance;
+                            if (productType === 'tee') {
+                                printAreaWidth = 4200;
+                                printAreaHeight = 4800;
+                                thisCollarDistance = 574;
+                            } else if (productType === 'sweater') {
+                                printAreaWidth = 4200;
+                                printAreaHeight = 4800;
+                                thisCollarDistance = 649;
+                            } else if (productType === 'hoodie') {
+                                printAreaWidth = 4200;
+                                printAreaHeight = 2799;
+                                thisCollarDistance = 631;
+                            }
+                            ////////////////////
+                            let canadaScale = placeholder.images[0].scale;
+                            let targetWidthInPixels = canPrintAreaWidth * canadaScale;
+                            let newScale = targetWidthInPixels / printAreaWidth;
+                            //console.log(`AUS: Scale changed from ${canadaScale} to ${newScale} based on ${targetWidthInPixels} / ${printAreaWidth}`);
+                            placeholder.images[0].scale = newScale;
+                            // Now calculate Y co-ordinate
+                            //Calculate Canada positioning
+                            let canValueY = placeholder.images[0].y;
+                            let canPixelsFromTopOfPrintArea = canPrintAreaHeight * canValueY;
+                            let canPixelsFromBottomOfCollar = canPixelsFromTopOfPrintArea + canCollarDistance;
+                            // Now work out what the EU positioning should be
+                            let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
+                            let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
+                            placeholder.images[0].y = valueY;
+                            //console.log(`AUS: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
                         }
-                        ////////////////////
-                        let canadaScale = placeholder.images[0].scale;
-                        let targetWidthInPixels = canPrintAreaWidth * canadaScale;
-                        let newScale = targetWidthInPixels / printAreaWidth;
-                        //console.log(`AUS: Scale changed from ${canadaScale} to ${newScale} based on ${targetWidthInPixels} / ${printAreaWidth}`);
-                        placeholder.images[0].scale = newScale;
-                        // Now calculate Y co-ordinate
-                        //Calculate Canada positioning
-                        let canValueY = placeholder.images[0].y;
-                        let canPixelsFromTopOfPrintArea = canPrintAreaHeight * canValueY;
-                        let canPixelsFromBottomOfCollar = canPixelsFromTopOfPrintArea + canCollarDistance;
-                        // Now work out what the EU positioning should be
-                        let pixelsFromTopOfPrintArea = canPixelsFromBottomOfCollar - thisCollarDistance;
-                        let valueY = pixelsFromTopOfPrintArea / printAreaHeight;
-                        placeholder.images[0].y = valueY;
-                        //console.log(`AUS: Y Scale changed from ${canValueY} to ${placeholder.images[0].y}`);
                     }
                 }
             }
@@ -401,12 +406,7 @@ async function executeMainLogic() {
                 "blueprint_id": listing.listing_blueprint_id,
                 "print_provider_id": printProviderID,
                 "variants": variantsArray,
-                "print_areas": [
-                    {
-                    "variant_ids": allVariantIDs,
-                    "placeholders": newPlaceholders
-                  }
-                ]
+                "print_areas": newPrintAreas
             }
 
             //res.send(`<pre>${JSON.stringify(newProductTemplate, null, 2)}</pre>`);

@@ -65,7 +65,11 @@ async function createNewCountryListing(newProductTemplate, retries = 3) {
 
         return newProductResponse.data.id;
     } catch (error) {
-        console.error(error);
+        if (error.response && error.response.data && error.response.data.errors) {
+            console.log(JSON.stringify(error.response.data, null, 2));
+        } else {
+            console.error(error);
+        }
         if (retries > 0) {
             console.log(`createNewCountryListing attempt failed. ${retries} retries left. Retrying...`);
             return createNewCountryListing(newProductTemplate, retries - 1);
