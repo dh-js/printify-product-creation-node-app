@@ -5,15 +5,15 @@ const {
 } = require("./helper_functions");
 
 async function executeMainLogic() {
-  // First, fetch the first 2 pages (200) listings from Printify and store them in allProductsData array
+  // First, fetch the first 6 pages (600) listings from Printify and store them in allProductsData array
   let allProductsData = [];
-  for (let i = 1; i <= 1; i++) {
+  for (let i = 1; i <= 6; i++) {
     const products = await fetchAllListings(i);
     allProductsData.push(...products);
   }
 
   // console.log(allProductsData.length);
-  //return allProductsData;
+  // return allProductsData;
 
   //console.log('All listings fetched from Printify');
 
@@ -95,7 +95,7 @@ async function executeMainLogic() {
 
   console.log(`Found ${eligibleListings.length} eligible listings`);
 
-  //return eligibleListings;
+  // return eligibleListings;
 
   //So eligibleListings will now contain any 'STARTER (CANADA SMALL SKU)' listings
   //Now we need to loop through each listing to update the SKUs
@@ -339,6 +339,9 @@ async function executeMainLogic() {
     },
   ];
 
+  //Remove test: Below array is to store new product templates to return during testing
+  //let newProductTemplatesArray = [];
+
   for (listing of eligibleListings) {
     for (const printProvider of printProviderIds) {
       let variantsArray = [];
@@ -367,6 +370,9 @@ async function executeMainLogic() {
         }
       }
 
+      // So now we have variantsArray which contains all the variants from CAN that are needed & that are available with this country's print provider
+      // And allVariantIDs which contains all the variant IDs from CAN that are needed & that are available with this country's print provider
+
       let print_provider_title = listing.listing_title;
       if (printProvider.country !== "US") {
         print_provider_title += " " + printProvider.country; // Title was previously trim()ed
@@ -382,8 +388,17 @@ async function executeMainLogic() {
             return JSON.parse(JSON.stringify(placeholder));
           });
 
+        // Need to check if the variant_ids are in allVariantIDs
+        // And only if they are, then add them to the newPrintAreas.variant_ids
+        let eligible_variant_ids = [];
+        for (const variant_id of printArea.variant_ids) {
+          if (allVariantIDs.includes(variant_id)) {
+            eligible_variant_ids.push(variant_id);
+          }
+        }
+
         return {
-          variant_ids: printArea.variant_ids,
+          variant_ids: eligible_variant_ids,
           placeholders: newPlaceholders,
         };
       });
@@ -597,8 +612,8 @@ async function executeMainLogic() {
         print_areas: newPrintAreas,
       };
 
-      //res.send(`<pre>${JSON.stringify(newProductTemplate, null, 2)}</pre>`);
-      //return;
+      // Remove test: Push the new product template to the array
+      // newProductTemplatesArray.push(newProductTemplate);
 
       try {
         let createdProductID = await createNewCountryListing(
@@ -642,6 +657,9 @@ async function executeMainLogic() {
   }
 
   console.log("Completed main process");
+
+  // Remove test: The below return is only used during testing
+  // return newProductTemplatesArray;
   //res.send(`<pre>${JSON.stringify(responseAllProducts.data, null, 2)}</pre>`);
 }
 
