@@ -2,9 +2,34 @@ const {
   fetchAllListings,
   updateCanadaSkus,
   createNewCountryListing,
+  fetchProviderVariants,
 } = require("./helper_functions");
 
 async function executeMainLogic() {
+  // --- Start of test block ---
+  // This block is for testing the fetchProviderVariants function.
+  // It will log the variants for a specific blueprint and provider, then exit.
+  // Remove this block to run the main application logic.
+  // try {
+  //   console.log("--- Running test for fetchProviderVariants ---");
+  //   const testBlueprintId = 6; // Example: Gildan 5000 Tee
+  //   const testProviderId = 29; // Example: US Provider
+  //   const variants = await fetchProviderVariants(
+  //     testBlueprintId,
+  //     testProviderId
+  //   );
+  //   console.log(
+  //     `Fetched variants for blueprint ${testBlueprintId} and provider ${testProviderId}:`
+  //   );
+  //   console.log(JSON.stringify(variants, null, 2));
+  //   console.log("--- Test complete. Application will now exit. ---");
+  //   return; // Exit early after the test
+  // } catch (error) {
+  //   console.error("--- Test failed ---", error);
+  //   return; // Exit if the test fails
+  // }
+  // --- End of test block ---
+
   // First, fetch the first 6 pages (600) listings from Printify and store them in allProductsData array
   let allProductsData = [];
   for (let i = 1; i <= 6; i++) {
@@ -344,12 +369,35 @@ async function executeMainLogic() {
 
   for (listing of eligibleListings) {
     for (const printProvider of printProviderIds) {
+      // Setting the print provider ID depending on whether the listing is a tee or sweater/hoodie
+      let printProviderID;
+      if (printProvider.country === "EU") {
+        listing.listing_blueprint_id === 6
+          ? (printProviderID = printProvider.id)
+          : (printProviderID = printProvider.id_sweater_hoodie);
+      } else {
+        printProviderID = printProvider.id;
+      }
+
+      let availableProviderVariants;
+      try {
+        availableProviderVariants = await fetchProviderVariants(
+          listing.listing_blueprint_id,
+          printProviderID
+        );
+      } catch (error) {
+        console.error(
+          `Could not create listing for ${listing.listing_title} with provider ${printProvider.country} because we could not fetch the variants from Printify. Skipping.`
+        );
+        continue;
+      }
+
       let variantsArray = [];
       let allVariantIDs = [];
       for (const color in listing.listing_variants) {
         for (const size in listing.listing_variants[color]) {
           let variantId = listing.listing_variants[color][size].id;
-          if (printProvider[listing.listing_blueprint_id].includes(variantId)) {
+          if (availableProviderVariants.includes(variantId)) {
             let newSKU;
             if (listing.listing_variants[color][size].sku.endsWith("CAN")) {
               newSKU =
@@ -382,7 +430,12 @@ async function executeMainLogic() {
       // Note that the below is based on the assumption there is onyl 1 print area item(listing_print_areas[0])
       let newPrintAreas = listing.listing_print_areas.map((printArea) => {
         let newPlaceholders = printArea.placeholders
-          .filter((placeholder) => placeholder.images.length > 0)
+          .filter(
+            (placeholder) =>
+              placeholder.images.length > 0 &&
+              (placeholder.position === "front" ||
+                placeholder.position === "back")
+          )
           .map((placeholder) => {
             // Create a deep copy of the placeholder
             return JSON.parse(JSON.stringify(placeholder));
@@ -591,16 +644,6 @@ async function executeMainLogic() {
             }
           }
         }
-      }
-
-      // Setting the UK print provider ID depending on whether the listing is a tee or sweater/hoodie
-      let printProviderID;
-      if (printProvider.country === "EU") {
-        listing.listing_blueprint_id === 6
-          ? (printProviderID = printProvider.id)
-          : (printProviderID = printProvider.id_sweater_hoodie);
-      } else {
-        printProviderID = printProvider.id;
       }
 
       let newProductTemplate = {
