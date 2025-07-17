@@ -6,30 +6,6 @@ const {
 } = require("./helper_functions");
 
 async function executeMainLogic() {
-  // --- Start of test block ---
-  // This block is for testing the fetchProviderVariants function.
-  // It will log the variants for a specific blueprint and provider, then exit.
-  // Remove this block to run the main application logic.
-  // try {
-  //   console.log("--- Running test for fetchProviderVariants ---");
-  //   const testBlueprintId = 6; // Example: Gildan 5000 Tee
-  //   const testProviderId = 29; // Example: US Provider
-  //   const variants = await fetchProviderVariants(
-  //     testBlueprintId,
-  //     testProviderId
-  //   );
-  //   console.log(
-  //     `Fetched variants for blueprint ${testBlueprintId} and provider ${testProviderId}:`
-  //   );
-  //   console.log(JSON.stringify(variants, null, 2));
-  //   console.log("--- Test complete. Application will now exit. ---");
-  //   return; // Exit early after the test
-  // } catch (error) {
-  //   console.error("--- Test failed ---", error);
-  //   return; // Exit if the test fails
-  // }
-  // --- End of test block ---
-
   // First, fetch the first 6 pages (600) listings from Printify and store them in allProductsData array
   let allProductsData = [];
   for (let i = 1; i <= 6; i++) {
@@ -369,7 +345,7 @@ async function executeMainLogic() {
 
   for (listing of eligibleListings) {
     for (const printProvider of printProviderIds) {
-      // Setting the print provider ID depending on whether the listing is a tee or sweater/hoodie
+      // Determine the print provider ID early to fetch available variants
       let printProviderID;
       if (printProvider.country === "EU") {
         listing.listing_blueprint_id === 6
@@ -379,17 +355,18 @@ async function executeMainLogic() {
         printProviderID = printProvider.id;
       }
 
-      let availableProviderVariants;
+      // Fetch available variants for this blueprint and provider
+      let availableVariantIds;
       try {
-        availableProviderVariants = await fetchProviderVariants(
+        availableVariantIds = await fetchProviderVariants(
           listing.listing_blueprint_id,
           printProviderID
         );
       } catch (error) {
         console.error(
-          `Could not create listing for ${listing.listing_title} with provider ${printProvider.country} because we could not fetch the variants from Printify. Skipping.`
+          `Failed to fetch available variants for blueprint ${listing.listing_blueprint_id}, provider ${printProviderID}. Skipping this country listing.`
         );
-        continue;
+        continue; // Skip this country listing if we can't fetch available variants
       }
 
       let variantsArray = [];
@@ -397,7 +374,11 @@ async function executeMainLogic() {
       for (const color in listing.listing_variants) {
         for (const size in listing.listing_variants[color]) {
           let variantId = listing.listing_variants[color][size].id;
-          if (availableProviderVariants.includes(variantId)) {
+          // Add the additional filter to check if variant is available from provider
+          if (
+            printProvider[listing.listing_blueprint_id].includes(variantId) &&
+            availableVariantIds.includes(variantId)
+          ) {
             let newSKU;
             if (listing.listing_variants[color][size].sku.endsWith("CAN")) {
               newSKU =
@@ -430,12 +411,7 @@ async function executeMainLogic() {
       // Note that the below is based on the assumption there is onyl 1 print area item(listing_print_areas[0])
       let newPrintAreas = listing.listing_print_areas.map((printArea) => {
         let newPlaceholders = printArea.placeholders
-          .filter(
-            (placeholder) =>
-              placeholder.images.length > 0 &&
-              (placeholder.position === "front" ||
-                placeholder.position === "back")
-          )
+          .filter((placeholder) => placeholder.images.length > 0)
           .map((placeholder) => {
             // Create a deep copy of the placeholder
             return JSON.parse(JSON.stringify(placeholder));
