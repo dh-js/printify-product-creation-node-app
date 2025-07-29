@@ -411,7 +411,12 @@ async function executeMainLogic() {
       // Note that the below is based on the assumption there is onyl 1 print area item(listing_print_areas[0])
       let newPrintAreas = listing.listing_print_areas.map((printArea) => {
         let newPlaceholders = printArea.placeholders
-          .filter((placeholder) => placeholder.images.length > 0)
+          .filter(
+            (placeholder) =>
+              (placeholder.position === "front" ||
+                placeholder.position === "back") &&
+              placeholder.images.length > 0
+          )
           .map((placeholder) => {
             // Create a deep copy of the placeholder
             return JSON.parse(JSON.stringify(placeholder));
@@ -680,6 +685,7 @@ async function executeMainLogic() {
   // Remove test: The below return is only used during testing
   // return newProductTemplatesArray;
   //res.send(`<pre>${JSON.stringify(responseAllProducts.data, null, 2)}</pre>`);
+  //return eligibleListings;
 }
 
 module.exports = executeMainLogic;
